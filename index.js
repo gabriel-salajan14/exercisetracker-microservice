@@ -103,6 +103,7 @@ app.post("/api/users/:_id/exercises", (req, res) => {
         });
 });
 
+//TODO fix this
 app.get("/api/users/:_id/logs?", async (req, res) => {
     const userId = req.params._id;
     const from = req.query.from || new Date(0).toISOString().substring(0, 10);
@@ -149,6 +150,21 @@ app.get("/api/users/:_id/logs?", async (req, res) => {
             });
         });
 });
+
+//TODO - GET /api/users
+app.get("/api/users", async (req, res) => {
+  let users = await User.find().exec();
+
+  let parsedUsers = users.map((user) => {
+    return {
+      username: user.username,
+      _id: user._id
+    };
+});
+
+  res.json(parsedUsers)
+});
+
 
 app.get("/", async (req, res) => {
     res.sendFile(__dirname + "/views/index.html");
