@@ -122,7 +122,7 @@ app.get("/api/users/:_id/logs?", async (req, res) => {
             })
                 .limit(limit)
                 .then((exercises) => {
-                    console.log(exercises);
+                    //console.log(exercises);
 
                     let parsedDatesLog = exercises.map((exercise) => {
                         return {
@@ -151,7 +151,6 @@ app.get("/api/users/:_id/logs?", async (req, res) => {
         });
 });
 
-//TODO - GET /api/users
 app.get("/api/users", async (req, res) => {
   let users = await User.find().exec();
 
