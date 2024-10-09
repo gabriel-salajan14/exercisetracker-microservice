@@ -9,7 +9,9 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
-////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////
+
 async function connect() {
     const mongoServer = await mongoDb.MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
@@ -31,18 +33,12 @@ const exerciseSchema = new mongoose.Schema({
 });
 let Exercise = mongoose.model("exercise", exerciseSchema);
 
+///////////////////////////////////////////////////////////////////////////////////
+
 app.post("/api/users", (req, res) => {
     const inputUsername = req.body.username;
 
-    console.log("### create a new user ###".toLocaleUpperCase());
-
-    //? Create a new user
     let newUser = new User({ username: inputUsername });
-
-    console.log(
-        "creating a new user with username - ".toLocaleUpperCase() +
-            inputUsername
-    );
 
     newUser
         .save()
@@ -58,25 +54,25 @@ app.post("/api/users", (req, res) => {
 app.post("/api/users/:_id/exercises", (req, res) => {
     const userId = req.params._id;
     const description = req.body.description;
-    const duration = req.body.duration;
-    const date = new Date(req.body.date);
+    const duration = parseInt(req.body.duration);
+    let date = new Date(req.body.date);
 
-    //? Check for date
-    if (!date) {
-        date = new Date();
+    if (isNaN(date.getTime())) {
+        date = new Date(); 
     }
-
-    console.log(
-        "looking for user with id [".toLocaleUpperCase() + userId + "] ..."
-    );
+    
     User.findById(userId)
         .then((userInDb) => {
+            if (!userInDb) {
+                return res.json({ message: "User not found in the database!" });
+            }
+
             let newExercise = new Exercise({
                 userId: userInDb._id,
                 username: userInDb.username,
                 description: description,
-                duration: parseInt(duration),
-                date: date,
+                duration: duration,
+                date: date.toDateString(),
             });
 
             newExercise
@@ -103,15 +99,11 @@ app.post("/api/users/:_id/exercises", (req, res) => {
         });
 });
 
-//TODO fix this
 app.get("/api/users/:_id/logs?", async (req, res) => {
     const userId = req.params._id;
     const from = req.query.from || new Date(0).toISOString().substring(0, 10);
-    const to =
-        req.query.to || new Date(Date.now()).toISOString().substring(0, 10);
+    const to = req.query.to || new Date(Date.now()).toISOString().substring(0, 10);
     const limit = Number(req.query.limit) || 0;
-
-    console.log("### get the log from a user ###".toLocaleUpperCase());
 
     User.findById(userId)
         .then((userDb) => {
@@ -122,9 +114,11 @@ app.get("/api/users/:_id/logs?", async (req, res) => {
             })
                 .limit(limit)
                 .then((exercises) => {
-                    //console.log(exercises);
+                    const desc = [...exercises].sort(
+                        (a, b) => b.date.getTime() - a.date.getTime()
+                    );
 
-                    let parsedDatesLog = exercises.map((exercise) => {
+                    let parsedDatesLog = desc.map((exercise) => {
                         return {
                             description: exercise.description,
                             duration: exercise.duration,
@@ -183,6 +177,6 @@ connect()
             console.log("could not connect to server");
         }
     })
-    .catch((error) => {
+    .catch(() => {
         console.log("could not connect to db");
     });
